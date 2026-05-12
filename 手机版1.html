@@ -608,9 +608,7 @@
   document.getElementById('closeImageBtn').addEventListener('click',function(){ imageModal.classList.remove('show'); });
   imageModal.addEventListener('click',function(e){ if(e.target===imageModal) imageModal.classList.remove('show'); });
 
-  renderCalendar();
-})();
-  // 自动修正预测起点（不修改原有逻辑）
+    // 自动修正预测起点（不修改原有逻辑）
   (function autoFixLastPeriodStart() {
     const allDays = [];
     for (let i = 0; i < localStorage.length; i++) {
@@ -648,6 +646,9 @@
     s.lastPeriodStart = segs[segs.length - 1].start;
     saveSettings(s);
   })();
+  
+  renderCalendar();
+})();
 </script>
 </body>
 </html>
