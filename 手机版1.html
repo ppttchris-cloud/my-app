@@ -447,9 +447,15 @@
       ns.setDate(ns.getDate()+clen);
       const ss=`${ns.getFullYear()}-${String(ns.getMonth()+1).padStart(2,'0')}-${String(ns.getDate()).padStart(2,'0')}`;
       for(let j=0;j<plen;j++){ const pd=addDays(ss,j); const [py,pm]=pd.split('-').map(Number); if(py===year&&pm===month) res.predicted.push(parseInt(pd.split('-')[2])); }
-      const allPeriodDays=[];
-      for(let d=1;d<=daysInMonth(year,month);d++){ const ds=`${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`; if(getData(ds).isPeriod) allPeriodDays.push(d); }
-      if(allPeriodDays.length>0){ const lastRecordedDay=Math.max(...allPeriodDays); res.predicted=res.predicted.filter(d=>d>lastRecordedDay); }
+         const allPeriodDays=[];
+    for(let d=1;d<=daysInMonth(year,month);d++){ 
+      const ds=`${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`; 
+      if(getData(ds).isPeriod) allPeriodDays.push(d); 
+    }
+    if(allPeriodDays.length>0){ 
+      const lastRecordedDay=Math.max(...allPeriodDays); 
+      res.predicted=res.predicted.filter(d=>d>lastRecordedDay); 
+    }
       const ovDate=addDays(ss,-llen); const [oy,om,od]=ovDate.split('-').map(Number);
       if(oy===year&&om===month) res.ovulation.push(od);
       let fc=addDays(ovDate,-5);
@@ -472,7 +478,7 @@
     for(let d=1;d<=dim;d++){ const ds=`${calYear}-${String(calMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`; if(getData(ds).isPeriod) periodSet.add(d); }
     const expanded=new Set(periodSet);
     const arr=[...periodSet].sort((a,b)=>a-b);
-    if(arr.length>=2){ for(let i=0;i<arr.length-1;i++){ if(arr[i+1]-arr[i]<=2){ for(let d=arr[i]+1;d<arr[i+1];d++) expanded.add(d); } } }
+    if(arr.length>=2){ for(let i=0;i<arr.length-1;i++){ for(let d=arr[i]+1;d<arr[i+1];d++) expanded.add(d); } }
 
     let html='';
     for(let i=0;i<fd;i++) html+='<div></div>';
