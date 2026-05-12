@@ -390,6 +390,9 @@
     <strong id="modalDateTitle"></strong>
 
     <div class="toggle-row" id="periodToggle">
+          <div style="text-align:center; margin-top:4px;">
+      <button id="setPredictStartBtn" style="background:#f0e5d3; border:none; padding:8px 14px; border-radius:16px; font-size:0.75rem; font-weight:bold; cursor:pointer;">📌 设为下次预测起点</button>
+    </div>
       <span>🩸 标记为经期</span>
       <div class="toggle-track" id="toggleTrack"><div class="toggle-thumb"></div></div>
     </div>
@@ -486,6 +489,18 @@
       let lc=addDays(ovDate,1), le=addDays(ss,-1);
       while(dateCompare(lc,le)<=0){ const [ly,lm,ld]=lc.split('-').map(Number); if(ly===year&&lm===month) res.luteal.push(ld); lc=addDays(lc,1); }
     }
+
+        // 过滤：如果本月已记录经期，去掉之前的预测
+    const allPeriodDays = [];
+    for(let d=1; d<=daysInMonth(year, month); d++){
+      const ds = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      if(getData(ds).isPeriod) allPeriodDays.push(d);
+    }
+    if(allPeriodDays.length > 0){
+      const lastRecordedDay = Math.max(...allPeriodDays);
+      res.predicted = res.predicted.filter(d => d > lastRecordedDay);
+    }
+    
     return res;
   }
 
