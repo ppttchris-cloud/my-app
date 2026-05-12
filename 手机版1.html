@@ -607,46 +607,43 @@
 
   document.getElementById('closeImageBtn').addEventListener('click',function(){ imageModal.classList.remove('show'); });
   imageModal.addEventListener('click',function(e){ if(e.target===imageModal) imageModal.classList.remove('show'); });
-
-    // 自动修正预测起点（不修改原有逻辑）
-  (function autoFixLastPeriodStart() {
-    const allDays = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key.startsWith(STORAGE_CYCLE)) {
-        const ds = key.replace(STORAGE_CYCLE, '');
-        if (getData(ds).isPeriod) allDays.push(ds);
+    // 自动修正预测起点
+  (function(){
+    const allDays=[];
+    for(let i=0;i<localStorage.length;i++){
+      const key=localStorage.key(i);
+      if(key.startsWith(STORAGE_CYCLE)){
+        const ds=key.replace(STORAGE_CYCLE,'');
+        if(getData(ds).isPeriod) allDays.push(ds);
       }
     }
-    allDays.sort((a, b) => dateCompare(a, b));
-    if (allDays.length < 2) return;
-    // 合并成经期段，取每段第一天
-    const segs = [];
-    let cur = null;
-    for (const ds of allDays) {
-      if (!cur) { cur = { start: ds, end: ds }; }
+    allDays.sort((a,b)=>dateCompare(a,b));
+    if(allDays.length<2) return;
+    const segs=[];
+    let cur=null;
+    for(const ds of allDays){
+      if(!cur){ cur={start:ds,end:ds}; }
       else {
-        const diff = (new Date(ds) - new Date(cur.end)) / (1000 * 60 * 60 * 24);
-        if (diff <= 2) { cur.end = ds; }
-        else { segs.push(cur); cur = { start: ds, end: ds }; }
+        const diff=(new Date(ds)-new Date(cur.end))/(1000*60*60*24);
+        if(diff<=2){ cur.end=ds; }
+        else { segs.push(cur); cur={start:ds,end:ds}; }
       }
     }
-    if (cur) segs.push(cur);
-    if (segs.length < 2) return;
-    const starts = segs.slice(-3).map(s => new Date(s.start));
-    let sum = 0, cnt = 0;
-    for (let i = 1; i < starts.length; i++) {
-      sum += (starts[i] - starts[i - 1]) / (1000 * 60 * 60 * 24);
+    if(cur) segs.push(cur);
+    if(segs.length<2) return;
+    const starts=segs.slice(-3).map(s=>new Date(s.start));
+    let sum=0,cnt=0;
+    for(let i=1;i<starts.length;i++){
+      sum+=(starts[i]-starts[i-1])/(1000*60*60*24);
       cnt++;
     }
-    const avgCycle = Math.round(sum / cnt);
-    if (avgCycle < 20 || avgCycle > 45) return;
-    const s = getSettings();
-    s.cycleLength = avgCycle;
-    s.lastPeriodStart = segs[segs.length - 1].start;
+    const avgCycle=Math.round(sum/cnt);
+    if(avgCycle<20||avgCycle>45) return;
+    const s=getSettings();
+    s.cycleLength=avgCycle;
+    s.lastPeriodStart=segs[segs.length-1].start;
     saveSettings(s);
-  }
-
+  })();
   renderCalendar();
 })();
 </script>
