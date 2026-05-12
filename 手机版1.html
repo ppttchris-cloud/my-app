@@ -463,6 +463,15 @@
       let lc=addDays(ovDate,1), le=addDays(ss,-1);
       while(dateCompare(lc,le)<=0){ const [ly,lm,ld]=lc.split('-').map(Number); if(ly===year&&lm===month) res.luteal.push(ld); lc=addDays(lc,1); }
     }
+      const allPeriodDays=[];
+  for(let d=1;d<=daysInMonth(year,month);d++){ 
+    const ds=`${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`; 
+    if(getData(ds).isPeriod) allPeriodDays.push(d); 
+  }
+  if(allPeriodDays.length>0){ 
+    const lastRecordedDay=Math.max(...allPeriodDays); 
+    res.predicted=res.predicted.filter(d=>d>lastRecordedDay); 
+  }
     return res;
   }
 
