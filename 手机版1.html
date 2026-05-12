@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="周期手账">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><rect width='180' height='180' rx='36' fill='#f8d7da'/><text x='90' y='110' font-size='80' text-anchor='middle'>🌸</text></svg>">
+  <title>周期手账</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    }
+    body {
+      background: #f5efe0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 16px;
+      margin: 0;
+    }
+    .app-card {
+      width: 100%;
+      max-width: 420px;
+      background: #fffef7;
+      border-radius: 40px;
+      box-shadow: 0 20px 35px rgba(0,0,0,0.15);
+      padding: 20px 14px 24px;
+      border: 3px solid #e6d7b8;
+      display: flex;
+    /* ===== 新增：皮肤背景 ===== */
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    position: relative;
+      flex-direction: column;
+      gap: 14px;
+    }
+    /* ===== 新增：半透明遮罩 ===== */
+    .app-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(255,255,245,0.75);
+      border-radius: 37px;
+      z-index: 0;
+      pointer-events: none;
+    }
+    .app-card > * {
+      position: relative;
+      z-index: 1;
+    }
+    h2 {
+      text-align: center;
+      color: #5a4530;
+      font-size: 1.5rem;
+      letter-spacing: 2px;
+    }
+
+    /* 月历头部 */
+    .month-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: bold;
+      color: #5a4530;
+      padding: 0 4px;
+    }
+    .month-nav {
+      background: #f3e5d0;
+      border: none;
+      font-size: 1.3rem;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .month-nav:active {
+      background: #e5d0b0;
+    }
+
+    /* 日历网格 */
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 3px;
+      text-align: center;
+    }
+    .day-header {
+      font-size: 0.7rem;
+      color: #9b896c;
+      font-weight: bold;
+      padding: 4px 0;
+    }
+    .day-cell {
+      aspect-ratio: 1;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      background: #fcf9f2;
+      cursor: pointer;
+      border: 2px solid transparent;
+      font-weight: bold;
+      color: #5a4a30;
+      position: relative;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .day-cell:active {
+      opacity: 0.7;
+    }
+
+    /* 经期粉色 */
+    .day-cell.period {
+      background: #f8d7da;
+      border-color: #e8a0a8;
+      color: #6b2e38;
+    }
+    /* 预测经期浅紫虚线 */
+    .day-cell.predicted {
+      background: #f0e6f6;
+      border: 2px dashed #c4a4d4;
+      color: #4a3060;
+    }
+    /* 排卵期浅蓝绿 */
+    .day-cell.fertile {
+      background: #e0f4f0;
+      border-color: #a0d8c8;
+      color: #2e5a4a;
+    }
+    /* 排卵日 */
+    .day-cell.ovulation {
+      background: #c8f0e4;
+      border-color: #80c8b0;
+      color: #1e4a3a;
+    }
+    /* 黄体期淡黄 */
+    .day-cell.luteal {
+      background: #fef9e7;
+      border-color: #e8d5a0;
+      color: #6b5a2e;
+    }
+    /* 亲密记录蜜瓜橙 */
+    .day-cell.intimacy-only {
+      background: #fde4d0;
+      border-color: #f0b890;
+      color: #6b3e2e;
+    }
+    .day-cell.today {
+      border: 3px solid #d4a373;
+    }
+
+    .mini-dot {
+      width: 5px;
+      height: 5px;
+      background: #e87d8b;
+      border-radius: 50%;
+      margin-top: 1px;
+    }
+    .mini-img {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      background-size: cover;
+      background-position: center;
+      margin-top: 1px;
+    }
+    .ovu-icon {
+      font-size: 0.55rem;
+      position: absolute;
+      top: 1px;
+      right: 1px;
+    }
+
+    .legend {
+      display: flex;
+      gap: 6px;
+      font-size: 0.6rem;
+      color: #7a6b54;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .legend span {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+      display: inline-block;
+    }
+
+    /* 弹窗 */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+    .modal-overlay.show {
+      display: flex;
+    }
+    .modal-box {
+      background: #fffef7;
+      border-radius: 24px;
+      padding: 20px 16px;
+      width: 85%;
+      max-width: 350px;
+      border: 3px solid #e6d7b8;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .modal-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .modal-emoji {
+      font-size: 1.8rem;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 12px;
+      border: 2px solid transparent;
+    }
+    .modal-emoji.selected {
+      background: #ffe3a5;
+      border-color: #f0c060;
+    }
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: bold;
+      cursor: pointer;
+      padding: 6px 0;
+    }
+    .toggle-track {
+      width: 46px;
+      height: 26px;
+      background: #ccc;
+      border-radius: 13px;
+      position: relative;
+      transition: 0.2s;
+      flex-shrink: 0;
+    }
+    .toggle-track.on {
+      background: #e8a0a8;
+    }
+    .toggle-thumb {
+      width: 22px;
+      height: 22px;
+      background: white;
+      border-radius: 50%;
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      transition: 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .toggle-track.on .toggle-thumb {
+      left: 22px;
+    }
+    .btn {
+      border: none;
+      padding: 10px 18px;
+      border-radius: 20px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .btn-save {
+      background: #b3925c;
+      color: white;
+      box-shadow: 0 3px 0 #7d623c;
+    }
+    .btn-delete {
+      background: #e8b4b4;
+      color: #5a2020;
+    }
+    .btn-close {
+      background: #eee;
+      color: #444;
+    }
+    .btn:active {
+      transform: translateY(2px);
+      box-shadow: none;
+    }
+    .intimacy-tag {
+      background: #f0e0d0;
+      padding: 5px 10px;
+      border-radius: 14px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      cursor: pointer;
+      border: 2px solid transparent;
+    }
+    .intimacy-tag.selected {
+      background: #e8c8b8;
+      border-color: #c47a6b;
+    }
+    .hint-text {
+      font-size: 0.7rem;
+      color: #8b6e5e;
+      min-height: 16px;
+    }
+    .image-modal {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.85);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .image-modal.show {
+      display: flex;
+    }
+    .image-modal img {
+      max-width: 90%;
+      max-height: 75%;
+      border-radius: 16px;
+      border: 4px solid white;
+    }
+    .image-modal .close-img-btn {
+      background: white;
+      border: none;
+      padding: 10px 26px;
+      border-radius: 24px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+<div class="app-card" id="appCard">
+  <h2>🌸 周期手账</h2>
+  <!-- ===== 新增：换皮肤按钮 ===== -->
+  <div class="skin-row" style="display:flex;justify-content:center;gap:8px;">
+    <button class="skin-btn" id="changeBgBtn" style="background:#f0e5d3;border:none;padding:8px 16px;border-radius:20px;font-size:0.8rem;font-weight:bold;cursor:pointer;">🖼 换背景</button>
+    <button class="skin-btn" id="resetBgBtn" style="background:#f0e5d3;border:none;padding:8px 16px;border-radius:20px;font-size:0.8rem;font-weight:bold;cursor:pointer;">↩ 恢复默认</button>
+    <input type="file" id="bgFileInput" accept="image/*" style="display:none;">
+  </div>
+
+  <div class="month-header">
+    <button class="month-nav" id="prevMonth">◀</button>
+    <span id="monthLabel">2026年5月</span>
+    <button class="month-nav" id="nextMonth">▶</button>
+  </div>
+
+  <div class="calendar-grid" id="calendarHead"></div>
+  <div class="calendar-grid" id="calendarBody"></div>
+
+  <div class="legend">
+    <span><span class="legend-dot" style="background:#f8d7da;"></span>经期</span>
+    <span><span class="legend-dot" style="background:#f0e6f6; border:1px dashed #c4a4d4;"></span>预测经期</span>
+    <span><span class="legend-dot" style="background:#e0f4f0;"></span>排卵期</span>
+    <span><span class="legend-dot" style="background:#c8f0e4;"></span>🌸排卵日</span>
+    <span><span class="legend-dot" style="background:#fef9e7;"></span>黄体期</span>
+    <span><span class="legend-dot" style="background:#fde4d0;"></span>亲密</span>
+  </div>
+  <div class="hint-text" id="cycleHint"></div>
+</div>
+
+<!-- 弹窗 -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <strong id="modalDateTitle"></strong>
+
+    <div class="toggle-row" id="periodToggle">
+      <span>🩸 标记为经期</span>
+      <div class="toggle-track" id="toggleTrack"><div class="toggle-thumb"></div></div>
+    </div>
+    <div class="hint-text" id="periodHint"></div>
+
+    <div class="modal-row"><span>😣 肚子：</span><span id="painEmojis"></span></div>
+    <div class="modal-row"><span>🩸 血量：</span><span id="flowEmojis"></span></div>
+
+    <div class="modal-row">
+      <span>💕 亲密：</span>
+      <span id="intimacyTags">
+        <span class="intimacy-tag" data-val="none">无</span>
+        <span class="intimacy-tag" data-val="condom">🍥戴套</span>
+        <span class="intimacy-tag" data-val="pill">💊吃药</span>
+        <span class="intimacy-tag" data-val="outside">🚫体外</span>
+        <span class="intimacy-tag" data-val="other">❓其他</span>
+      </span>
+    </div>
+
+    <textarea id="modalNote" placeholder="备注……" rows="2" style="width:100%; border-radius:14px; border:2px solid #e3cd9e; padding:8px; resize:none; font-size:0.9rem;"></textarea>
+
+    <div class="modal-row">
+      <label style="background:#f0e5d3; padding:6px 12px; border-radius:14px; font-size:0.8rem; cursor:pointer;" for="imageUpload">📷 配图</label>
+      <input type="file" id="imageUpload" accept="image/*" style="display:none;">
+      <span id="imagePreview" style="font-size:0.75rem; cursor:pointer;"></span>
+    </div>
+
+    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+      <button class="btn btn-save" id="modalSave">💾 保存</button>
+      <button class="btn btn-delete" id="modalDelete">🗑 删除</button>
+      <button class="btn btn-close" id="modalClose">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- 大图 -->
+<div class="image-modal" id="imageModal">
+  <img id="largeImage" src="" alt="大图">
+  <button class="close-img-btn" id="closeImageBtn">关闭</button>
+</div>
+
+<script>
+(function(){
+  const STORAGE_CYCLE = 'cycle_v5_';
+  const STORAGE_SETTINGS = 'cycle_settings_v5';
+
+  function todayStr(){
+    const d=new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+  function addDays(ds,n){
+    const d=new Date(ds); d.setDate(d.getDate()+n);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+  function dateCompare(a,b){ return new Date(a)-new Date(b); }
+
+  function getData(ds){
+    const r=localStorage.getItem(STORAGE_CYCLE+ds);
+    return r ? JSON.parse(r) : {isPeriod:false,pain:'',flow:'',intimacy:'none',note:'',image:''};
+  }
+  function setData(ds,obj){ localStorage.setItem(STORAGE_CYCLE+ds, JSON.stringify(obj)); }
+  function delData(ds){ localStorage.removeItem(STORAGE_CYCLE+ds); }
+
+  function getSettings(){
+    const r=localStorage.getItem(STORAGE_SETTINGS);
+    return r ? JSON.parse(r) : {cycleLength:28,periodLength:5,lastPeriodStart:null,lutealLength:14};
+  }
+  function saveSettings(s){ localStorage.setItem(STORAGE_SETTINGS, JSON.stringify(s)); }
+
+  // ===== 月历 =====
+  let calYear, calMonth;
+  const now=new Date(); calYear=now.getFullYear(); calMonth=now.getMonth()+1;
+  const monthLabel=document.getElementById('monthLabel');
+  const calHead=document.getElementById('calendarHead');
+  const calBody=document.getElementById('calendarBody');
+  const cycleHint=document.getElementById('cycleHint');
+
+  function daysInMonth(y,m){ return new Date(y,m,0).getDate(); }
+
+  function getPredictions(year,month){
+    const s=getSettings();
+    const res={predicted:[],fertile:[],ovulation:[],luteal:[]};
+    if(!s.lastPeriodStart) return res;
+    const plen=s.periodLength||5, clen=s.cycleLength||28, llen=s.lutealLength||14;
+    let ns=new Date(s.lastPeriodStart); ns.setDate(ns.getDate()-clen*3);
+    for(let i=0;i<12;i++){
+      ns.setDate(ns.getDate()+clen);
+      const ss=`${ns.getFullYear()}-${String(ns.getMonth()+1).padStart(2,'0')}-${String(ns.getDate()).padStart(2,'0')}`;
+      for(let j=0;j<plen;j++){ const pd=addDays(ss,j); const [py,pm]=pd.split('-').map(Number); if(py===year&&pm===month) res.predicted.push(parseInt(pd.split('-')[2])); }
+      const ovDate=addDays(ss,-llen); const [oy,om,od]=ovDate.split('-').map(Number);
+      if(oy===year&&om===month) res.ovulation.push(od);
+      let fc=addDays(ovDate,-5);
+      while(dateCompare(fc,ovDate)<=0){ const [fy,fm,fd]=fc.split('-').map(Number); if(fy===year&&fm===month) res.fertile.push(fd); fc=addDays(fc,1); }
+      let lc=addDays(ovDate,1), le=addDays(ss,-1);
+      while(dateCompare(lc,le)<=0){ const [ly,lm,ld]=lc.split('-').map(Number); if(ly===year&&lm===month) res.luteal.push(ld); lc=addDays(lc,1); }
+    }
+    return res;
+  }
+
+  function renderCalendar(){
+    monthLabel.textContent=`${calYear}年${calMonth}月`;
+    calHead.innerHTML=''; ['日','一','二','三','四','五','六'].forEach(d=>{ const el=document.createElement('div'); el.className='day-header'; el.textContent=d; calHead.appendChild(el); });
+    const dim=daysInMonth(calYear,calMonth);
+    const fd=new Date(calYear,calMonth-1,1).getDay();
+    const pred=getPredictions(calYear,calMonth);
+    const tt=todayStr();
+
+    const periodSet=new Set();
+    for(let d=1;d<=dim;d++){ const ds=`${calYear}-${String(calMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`; if(getData(ds).isPeriod) periodSet.add(d); }
+    const expanded=new Set(periodSet);
+    const arr=[...periodSet].sort((a,b)=>a-b);
+    if(arr.length>=2){ for(let i=0;i<arr.length-1;i++){ for(let d=arr[i]+1;d<arr[i+1];d++) expanded.add(d); } }
+
+    let html='';
+    for(let i=0;i<fd;i++) html+='<div></div>';
+    for(let d=1;d<=dim;d++){
+      const ds=`${calYear}-${String(calMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const data=getData(ds);
+      let cls='day-cell', ovu='';
+      if(expanded.has(d)) cls+=' period';
+      else if(pred.ovulation.includes(d)){ cls+=' ovulation'; ovu='<span class="ovu-icon">🌸</span>'; }
+      else if(pred.fertile.includes(d)) cls+=' fertile';
+      else if(pred.predicted.includes(d)) cls+=' predicted';
+      else if(pred.luteal.includes(d)) cls+=' luteal';
+      else if(data.intimacy&&data.intimacy!=='none') cls+=' intimacy-only';
+      if(ds===tt) cls+=' today';
+      let extra='';
+      if(data.note||data.pain||data.flow||(data.intimacy&&data.intimacy!=='none')) extra+='<div class="mini-dot"></div>';
+      if(data.image) extra+=`<div class="mini-img" style="background-image:url(${data.image})"></div>`;
+      if(ovu) extra+=ovu;
+      html+=`<div class="${cls}" data-date="${ds}">${d}${extra}</div>`;
+    }
+    calBody.innerHTML=html;
+
+    // 绑定点击事件
+    calBody.querySelectorAll('.day-cell').forEach(cell=>{
+      cell.addEventListener('click', function(e){
+        const ds=this.getAttribute('data-date');
+        if(ds) openModal(ds);
+      });
+    });
+  }
+
+  // ===== 新增：皮肤切换 =====
+  const appCard = document.getElementById('appCard');
+  const changeBgBtn = document.getElementById('changeBgBtn');
+  const resetBgBtn = document.getElementById('resetBgBtn');
+  const bgFileInput = document.getElementById('bgFileInput');
+  const SKIN_KEY = 'my_skin_bg';
+
+  // 加载已保存的皮肤
+  const savedBg = localStorage.getItem(SKIN_KEY);
+  if (savedBg && appCard) {
+    appCard.style.backgroundImage = `url(${savedBg})`;
+  }
+
+  changeBgBtn.addEventListener('click', () => {
+    console.log('换背景按钮被点击了');
+    bgFileInput.click();
+  });
+
+  bgFileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+      reader.onload = (ev) => {
+        const imgData = ev.target.result;
+        console.log('图片数据已生成，长度:', imgData.length);
+        appCard.style.backgroundImage = `url(${imgData})`;
+        console.log('背景已设置:', appCard.style.backgroundImage.substring(0, 50));
+        localStorage.setItem(SKIN_KEY, imgData);
+      };
+    reader.readAsDataURL(file);
+  });
+
+  resetBgBtn.addEventListener('click', () => {
+    appCard.style.backgroundImage = '';
+    localStorage.removeItem(SKIN_KEY);
+  });
+
+  document.getElementById('prevMonth').addEventListener('click',()=>{ calMonth--; if(calMonth<1){calMonth=12;calYear--;} renderCalendar(); });
+  document.getElementById('nextMonth').addEventListener('click',()=>{ calMonth++; if(calMonth>12){calMonth=1;calYear++;} renderCalendar(); });
+
+  // ===== 弹窗 =====
+  const modalOverlay=document.getElementById('modalOverlay');
+  const modalDateTitle=document.getElementById('modalDateTitle');
+  const toggleTrack=document.getElementById('toggleTrack');
+  const periodHint=document.getElementById('periodHint');
+  const painEmojis=document.getElementById('painEmojis');
+  const flowEmojis=document.getElementById('flowEmojis');
+  const modalNote=document.getElementById('modalNote');
+  const imageUpload=document.getElementById('imageUpload');
+  const imagePreview=document.getElementById('imagePreview');
+  const largeImage=document.getElementById('largeImage');
+  const imageModal=document.getElementById('imageModal');
+
+  let curDate=null, curImg='', curPain='', curFlow='', curIntimacy='none', curPeriod=false;
+
+  const painOpts=['😊','😐','😖'];
+  const flowOpts=['🩸','🩸🩸','🩸🩸🩸'];
+
+  function renderPain(){
+    painEmojis.innerHTML=painOpts.map(e=>`<span class="modal-emoji${curPain===e?' selected':''}" data-v="${e}">${e}</span>`).join('');
+    painEmojis.querySelectorAll('.modal-emoji').forEach(el=>{ el.addEventListener('click',function(){ curPain=this.getAttribute('data-v'); renderPain(); }); });
+  }
+  function renderFlow(){
+    flowEmojis.innerHTML=flowOpts.map(e=>`<span class="modal-emoji${curFlow===e?' selected':''}" data-v="${e}">${e}</span>`).join('');
+    flowEmojis.querySelectorAll('.modal-emoji').forEach(el=>{ el.addEventListener('click',function(){ curFlow=this.getAttribute('data-v'); renderFlow(); }); });
+  }
+  function renderIntimacy(){
+    document.querySelectorAll('#intimacyTags .intimacy-tag').forEach(tag=>{
+      tag.classList.toggle('selected', tag.getAttribute('data-val')===curIntimacy);
+      tag.onclick=function(){ curIntimacy=this.getAttribute('data-val'); renderIntimacy(); };
+    });
+  }
+  function updatePeriodHint(){
+    if(!curPeriod){ periodHint.textContent=''; return; }
+    const prev=getData(addDays(curDate,-1)), next=getData(addDays(curDate,1));
+    if(prev.isPeriod&&!next.isPeriod) periodHint.textContent='💡 可能是经期最后一天';
+    else if(!prev.isPeriod&&next.isPeriod) periodHint.textContent='💡 可能是经期第一天';
+    else if(prev.isPeriod&&next.isPeriod) periodHint.textContent='💡 经期中';
+    else periodHint.textContent='💡 标记为经期日';
+  }
+
+  document.getElementById('periodToggle').addEventListener('click',function(){
+    curPeriod=!curPeriod; toggleTrack.classList.toggle('on',curPeriod); updatePeriodHint();
+  });
+
+  function openModal(ds){
+    curDate=ds; modalDateTitle.textContent=ds;
+    const data=getData(ds);
+    curPeriod=data.isPeriod||false; toggleTrack.classList.toggle('on',curPeriod);
+    curPain=data.pain||''; curFlow=data.flow||''; curIntimacy=data.intimacy||'none';
+    modalNote.value=data.note||''; curImg=data.image||'';
+    imagePreview.textContent=curImg?'✅ 已附图 (点我看大图)':''; imagePreview.style.cursor=curImg?'pointer':'default';
+    imageUpload.value=''; updatePeriodHint();
+    renderPain(); renderFlow(); renderIntimacy();
+    modalOverlay.classList.add('show');
+  }
+
+  imagePreview.addEventListener('click',function(){
+    if(curImg){ largeImage.src=curImg; imageModal.classList.add('show'); }
+  });
+  imageUpload.addEventListener('change',function(e){
+    const f=e.target.files[0]; if(!f)return;
+    const r=new FileReader(); r.onload=function(ev){ curImg=ev.target.result; imagePreview.textContent='✅ 已选图'; imagePreview.style.cursor='pointer'; }; r.readAsDataURL(f);
+  });
+
+  document.getElementById('modalSave').addEventListener('click',function(){
+    if(!curDate) return;
+    setData(curDate,{isPeriod:curPeriod,pain:curPain,flow:curFlow,intimacy:curIntimacy,note:modalNote.value.trim(),image:curImg});
+    if(curPeriod){
+      const s=getSettings(); let all=[];
+      for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k.startsWith(STORAGE_CYCLE)){ const d=k.replace(STORAGE_CYCLE,''); if(getData(d).isPeriod) all.push(d); } }
+      all.sort((a,b)=>dateCompare(a,b)); if(all.length>0){ s.lastPeriodStart=all[0]; saveSettings(s); }
+    }
+    modalOverlay.classList.remove('show'); renderCalendar(); cycleHint.textContent='✅ 已保存'; setTimeout(()=>{cycleHint.textContent='';},1500);
+  });
+
+  document.getElementById('modalDelete').addEventListener('click',function(){
+    if(!curDate) return;
+    if(confirm('确定删除这一天的记录吗？')){ delData(curDate); modalOverlay.classList.remove('show'); renderCalendar(); cycleHint.textContent='🗑 已删除'; setTimeout(()=>{cycleHint.textContent='';},1500); }
+  });
+
+  document.getElementById('modalClose').addEventListener('click',function(){ modalOverlay.classList.remove('show'); });
+  modalOverlay.addEventListener('click',function(e){ if(e.target===modalOverlay) modalOverlay.classList.remove('show'); });
+
+  document.getElementById('closeImageBtn').addEventListener('click',function(){ imageModal.classList.remove('show'); });
+  imageModal.addEventListener('click',function(e){ if(e.target===imageModal) imageModal.classList.remove('show'); });
+
+  // 启动
+  renderCalendar();
+})();
+</script>
+</body>
+</html>
