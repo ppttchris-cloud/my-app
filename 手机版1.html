@@ -644,7 +644,7 @@
     if(curPeriod){
       const s=getSettings(); let all=[];
       for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k.startsWith(STORAGE_CYCLE)){ const d=k.replace(STORAGE_CYCLE,''); if(getData(d).isPeriod) all.push(d); } }
-      all.sort((a,b)=>dateCompare(a,b)); if(all.length>0){ s.lastPeriodStart=all[0]; saveSettings(s); }
+      all.sort((a,b)=>dateCompare(a,b)); if(all.length>0){ s.lastPeriodStart=all[all.length-1]; saveSettings(s); }
     }
     modalOverlay.classList.remove('show'); renderCalendar(); cycleHint.textContent='✅ 已保存'; setTimeout(()=>{cycleHint.textContent='';},1500);
   });
