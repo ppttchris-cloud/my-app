@@ -441,35 +441,8 @@
     const s=getSettings();
     const res={predicted:[],fertile:[],ovulation:[],luteal:[]};
     if(!s.lastPeriodStart) return res;
-    const plen=s.periodLength||5, llen=s.lutealLength||14;
-    const clen = (() => {
-      const allDays = [];
-      for(let i=0;i<localStorage.length;i++){
-        const key=localStorage.key(i);
-        if(key.startsWith(STORAGE_CYCLE)){
-          const ds=key.replace(STORAGE_CYCLE,'');
-          if(getData(ds).isPeriod) allDays.push(ds);
-        }
-      }
-      allDays.sort((a,b)=>dateCompare(a,b));
-      if(allDays.length<2) return s.cycleLength||28;
-      const segs=[];
-      let cur=null;
-      for(const ds of allDays){
-        if(!cur){ cur={start:ds,end:ds}; }
-        else {
-          const diff=(new Date(ds)-new Date(cur.end))/(1000*60*60*24);
-          if(diff<=2){ cur.end=ds; }
-          else { segs.push(cur); cur={start:ds,end:ds}; }
-        }
-      }
-      if(cur) segs.push(cur);
-      if(segs.length<2) return s.cycleLength||28;
-      const starts=segs.slice(-3).map(s=>new Date(s.start));
-      let sum=0, cnt=0;
-      for(let i=1;i<starts.length;i++){ sum+=(starts[i]-starts[i-1])/(1000*60*60*24); cnt++; }
-      return Math.round(sum/cnt)||s.cycleLength||28;
-    })();    let ns=new Date(s.lastPeriodStart); ns.setDate(ns.getDate()-clen*3);
+    const plen=s.periodLength||5, clen=s.cycleLength||28, llen=s.lutealLength||14;
+    let ns=new Date(s.lastPeriodStart); ns.setDate(ns.getDate()-clen*3);
     for(let i=0;i<12;i++){
       ns.setDate(ns.getDate()+clen);
       const ss=`${ns.getFullYear()}-${String(ns.getMonth()+1).padStart(2,'0')}-${String(ns.getDate()).padStart(2,'0')}`;
@@ -637,6 +610,45 @@
 
   renderCalendar();
 })();
+  // 自动修正预测起点（不修改原有逻辑）
+  (function autoFixLastPeriodStart() {
+    const allDays = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key.startsWith(STORAGE_CYCLE)) {
+        const ds = key.replace(STORAGE_CYCLE, '');
+        if (getData(ds).isPeriod) allDays.push(ds);
+      }
+    }
+    allDays.sort((a, b) => dateCompare(a, b));
+    if (allDays.length < 2) return;
+    // 合并成经期段，取每段第一天
+    const segs = [];
+    let cur = null;
+    for (const ds of allDays) {
+      if (!cur) { cur = { start: ds, end: ds }; }
+      else {
+        const diff = (new Date(ds) - new Date(cur.end)) / (1000 * 60 * 60 * 24);
+        if (diff <= 2) { cur.end = ds; }
+        else { segs.push(cur); cur = { start: ds, end: ds }; }
+      }
+    }
+    if (cur) segs.push(cur);
+    if (segs.length < 2) return;
+    const starts = segs.slice(-3).map(s => new Date(s.start));
+    let sum = 0, cnt = 0;
+    for (let i = 1; i < starts.length; i++) {
+      sum += (starts[i] - starts[i - 1]) / (1000 * 60 * 60 * 24);
+      cnt++;
+    }
+    const avgCycle = Math.round(sum / cnt);
+    if (avgCycle < 20 || avgCycle > 45) return;
+    const s = getSettings();
+    s.cycleLength = avgCycle;
+    s.lastPeriodStart = segs[segs.length - 1].start;
+    saveSettings(s);
+  })();
 </script>
 </body>
 </html>
+你看着给我改
